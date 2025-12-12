@@ -1,6 +1,18 @@
 import 'package:flutter/material.dart';
 
 class AddTransactionPage extends StatefulWidget {
+  final bool isEdit;
+  final String? originalTitle;
+  final double? originalAmount;
+  final String? originalType;
+
+  AddTransactionPage({
+    this.isEdit = false,
+    this.originalTitle,
+    this.originalAmount,
+    this.originalType,
+  });
+
   @override
   _AddTransactionPageState createState() => _AddTransactionPageState();
 }
@@ -10,6 +22,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   double result = 0;
   String type = "支出";
   TextEditingController titleController = TextEditingController();
+  TextEditingController amountController = TextEditingController();
 
   // 按鍵輸入
   void input(String value) {
@@ -84,16 +97,15 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       titleController.text = type;
     }
 
-    // 如果結果 <= 0，不阻止返回，但可以考慮給一個提示
+    // 如果結果 <= 0，不阻止返回，但給一個提示
     if (result <= 0) {
-      // 可以跳出 SnackBar 提示
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("金額必須大於 0")),
       );
       return;
     }
 
-    // 返回上一頁並傳資料
+    // 編輯模式 / 新增模式都回傳資料
     Navigator.pop(context, {
       "title": titleController.text,
       "amount": result,
@@ -143,6 +155,17 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
         ),
       ),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.isEdit) {
+      titleController.text = widget.originalTitle!;
+      result = widget.originalAmount!;
+      type = widget.originalType!;
+    }
   }
 
   @override

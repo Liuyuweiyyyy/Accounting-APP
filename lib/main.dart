@@ -9,17 +9,17 @@ void main() {
     home: ExpensePage(),
     debugShowCheckedModeBanner: false,
     theme: ThemeData(
-      primaryColor: Color(0xFF00BFFF),
-      scaffoldBackgroundColor: Color(0xFFF0F8FF),
+      primaryColor: Color(0xFFFFD93D),
+      scaffoldBackgroundColor: Color(0xFFFFF7F0),
 
       appBarTheme: AppBarTheme(
-        backgroundColor: Color(0xFF00BFFF),
+        backgroundColor: Color(0xFFFFD93D),
         foregroundColor: Colors.white,
         elevation: 3,
       ),
 
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: Color(0xFF00BFFF),
+        backgroundColor: Color(0xFFFFD93D),
         foregroundColor: Colors.white,
       ),
 
@@ -33,7 +33,6 @@ void main() {
       ),
 
       listTileTheme: ListTileThemeData(
-        iconColor: Color(0xFF003B73),
         titleTextStyle: TextStyle(
           color: Colors.black87,
           fontSize: 16,
@@ -127,7 +126,7 @@ class _ExpensePageState extends State<ExpensePage> {
                 outlay += newItem["amount"];
               }
             });
-            saveTransactions();  // ← 新增這行
+            saveTransactions();
           }
         },
       ),
@@ -136,13 +135,13 @@ class _ExpensePageState extends State<ExpensePage> {
           // 圓餅圖固定在上方
           Container(
             padding: EdgeInsets.all(16),
-            color: Colors.transparent, // 可以改成背景色
+            color: Colors.transparent,
             child: PieChartWidget(
               income: income,
               outlay: outlay,
               colors: [
-                Color(0xFFFFD700), // 收入：金色
-                Color(0xFFFF7F50), // 支出：珊瑚橘
+                Color(0xFF2563EB), // 收入：青藍（中亮）
+                Color(0xFF93C5FD), // 支出：淡藍灰（柔和）
               ],
               size: 250,
             )
@@ -181,21 +180,48 @@ class _ExpensePageState extends State<ExpensePage> {
                     margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     elevation: 3,
                     child: ListTile(
+                      onTap: () async {
+                        final updatedItem = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AddTransactionPage(
+                              isEdit: true,
+                              originalTitle: item["title"],
+                              originalAmount: item["amount"],
+                              originalType: item["type"],
+                            ),
+                          ),
+                        );
+
+                        if (updatedItem != null) {
+                          setState(() {
+                            if (item["type"] == "收入") {
+                              income -= item["amount"];
+                            } else {
+                              outlay -= item["amount"];
+                            }
+
+                            transactions[index] = updatedItem;
+
+                            if (updatedItem["type"] == "收入") {
+                              income += updatedItem["amount"];
+                            } else {
+                              outlay += updatedItem["amount"];
+                            }
+                          });
+
+                          saveTransactions();
+                        }
+                      },
                       leading: Icon(
-                        item["type"] == "收入"
-                            ? Icons.arrow_upward
-                            : Icons.arrow_downward,
-                        color: item["type"] == "收入"
-                            ? Color(0xFF007FFF)   // 收入：Azure Blue
-                            : Color(0xFFFF5E57),  // 支出：Sunset Orange
+                        item["type"] == "收入" ? Icons.arrow_upward : Icons.arrow_downward,
+                        color: item["type"] == "收入" ? Color(0xFF007FFF) : Color(0xFFD35400),
                       ),
                       title: Text(item["title"]),
                       trailing: Text(
                         "${item["amount"]} 元",
                         style: TextStyle(
-                          color: item["type"] == "收入"
-                              ? Colors.green
-                              : Colors.red,
+                          color: item["type"] == "收入" ? Colors.green : Colors.red,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
