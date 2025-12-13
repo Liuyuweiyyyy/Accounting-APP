@@ -49,11 +49,11 @@ class ExpensePage extends StatefulWidget {
 
 class _ExpensePageState extends State<ExpensePage> {
   List<Map<String, dynamic>> transactions = [
-    {"title": "早餐", "amount": 80, "type": "支出"},
-    {"title": "午餐", "amount": 120, "type": "支出"},
-    {"title": "薪水", "amount": 300, "type": "收入"},
-    {"title": "交通", "amount": 60, "type": "支出"},
-    {"title": "加班", "amount": 200, "type": "收入"},
+    {"title": "早餐", "amount": 80, "type": "支出","date": "2025-12-13T01:01:59.493251",},
+    {"title": "午餐", "amount": 120, "type": "支出","date": "2025-12-12T01:01:59.493251",},
+    {"title": "薪水", "amount": 300, "type": "收入","date": "2025-12-11T01:01:59.493251",},
+    {"title": "交通", "amount": 60, "type": "支出","date": "2025-12-10T01:01:59.493251",},
+    {"title": "加班", "amount": 200, "type": "收入","date": "2025-12-09T01:01:59.493251",},
   ];
   double income = 0;
   double outlay = 0;
@@ -61,22 +61,26 @@ class _ExpensePageState extends State<ExpensePage> {
   Future<void> saveTransactions() async {
     final prefs = await SharedPreferences.getInstance();
 
-    List<String> jsonList =
-    transactions.map((t) => jsonEncode(t)).toList();
+    List<String> jsonList = transactions.map((t) {
+      return jsonEncode(t);
+    }).toList();
 
     await prefs.setStringList('transactions', jsonList);
   }
 
+
   Future<void> loadTransactions() async {
     final prefs = await SharedPreferences.getInstance();
-
     List<String>? jsonList = prefs.getStringList('transactions');
 
-    if (jsonList != null) {
+    if (jsonList != null && jsonList.isNotEmpty) {
       transactions = jsonList
           .map((t) => jsonDecode(t) as Map<String, dynamic>)
           .toList();
-    }
+      // ⭐ 依時間排序，最新的在最前面
+      transactions.sort((a, b) =>
+          DateTime.parse(b["date"]).compareTo(DateTime.parse(a["date"])));
+    } // ⭐ 否則保留原本程式碼裡的 transactions 預設值
   }
 
   @override
@@ -94,6 +98,7 @@ class _ExpensePageState extends State<ExpensePage> {
       outlay = transactions
           .where((t) => t["type"] == "支出")
           .fold(0, (sum, t) => sum + t["amount"]);
+      saveTransactions();
 
       // 等第一幀後啟動動畫
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -102,12 +107,17 @@ class _ExpensePageState extends State<ExpensePage> {
     });
   }
 
+  // 排序
+  void sortTransactions() {
+    transactions.sort((a, b) =>
+        DateTime.parse(b["date"]).compareTo(DateTime.parse(a["date"])));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text("收支總覽"),
-        // 刪掉 actions 中的 IconButton
       ),
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.add),
@@ -119,12 +129,19 @@ class _ExpensePageState extends State<ExpensePage> {
 
           if (newItem != null) {
             setState(() {
-              transactions.add(newItem);
+              transactions.add({
+                "title": newItem["title"],
+                "amount": newItem["amount"],
+                "type": newItem["type"],
+                "date": newItem["date"],
+              });
+
               if (newItem["type"] == "收入") {
                 income += newItem["amount"];
               } else {
                 outlay += newItem["amount"];
               }
+              sortTransactions();
             });
             saveTransactions();
           }
@@ -154,9 +171,11 @@ class _ExpensePageState extends State<ExpensePage> {
               itemCount: transactions.length,
               itemBuilder: (context, index) {
                 final item = transactions[index];
+                final String dateString = item["date"].toString();
+                final DateTime date = DateTime.parse(dateString);
 
                 return Dismissible(
-                  key: Key(item["title"] + index.toString()),
+                  key: Key(item["date"]),
                   direction: DismissDirection.endToStart,
                   background: Container(
                     color: Colors.red,
@@ -165,17 +184,20 @@ class _ExpensePageState extends State<ExpensePage> {
                     child: Icon(Icons.delete, color: Colors.white),
                   ),
                   onDismissed: (direction) {
+                    final removed = transactions.removeAt(index);
                     setState(() {
-                      final removed = transactions.removeAt(index);
-
+                      // 更新收入/支出
                       if (removed["type"] == "收入") {
                         income -= removed["amount"];
                       } else {
                         outlay -= removed["amount"];
                       }
+                      // 再排序
+                      sortTransactions();
                     });
                     saveTransactions();
                   },
+
                   child: Card(
                     margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     elevation: 3,
@@ -189,6 +211,7 @@ class _ExpensePageState extends State<ExpensePage> {
                               originalTitle: item["title"],
                               originalAmount: item["amount"],
                               originalType: item["type"],
+                              originalDate: DateTime.parse(item["date"]),
                             ),
                           ),
                         );
@@ -201,13 +224,18 @@ class _ExpensePageState extends State<ExpensePage> {
                               outlay -= item["amount"];
                             }
 
-                            transactions[index] = updatedItem;
-
+                            transactions[index] = {
+                              "title": updatedItem["title"],
+                              "amount": updatedItem["amount"],
+                              "type": updatedItem["type"],
+                              "date": updatedItem["date"], // ⭐ 保留原時間
+                            };
                             if (updatedItem["type"] == "收入") {
                               income += updatedItem["amount"];
                             } else {
                               outlay += updatedItem["amount"];
                             }
+                            sortTransactions();
                           });
 
                           saveTransactions();
@@ -218,6 +246,12 @@ class _ExpensePageState extends State<ExpensePage> {
                         color: item["type"] == "收入" ? Color(0xFF007FFF) : Color(0xFFD35400),
                       ),
                       title: Text(item["title"]),
+                      subtitle: Text(
+                        "${date.year}/"
+                        "${date.month.toString().padLeft(2, '0')}/"
+                        "${date.day.toString().padLeft(2, '0')}",
+                        style: TextStyle(color: Colors.grey),
+                      ),
                       trailing: Text(
                         "${item["amount"]} 元",
                         style: TextStyle(

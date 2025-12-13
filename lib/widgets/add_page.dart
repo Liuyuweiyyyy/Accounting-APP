@@ -5,12 +5,14 @@ class AddTransactionPage extends StatefulWidget {
   final String? originalTitle;
   final double? originalAmount;
   final String? originalType;
+  final DateTime? originalDate;
 
   AddTransactionPage({
     this.isEdit = false,
     this.originalTitle,
     this.originalAmount,
     this.originalType,
+    this.originalDate,
   });
 
   @override
@@ -23,6 +25,23 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   String type = "支出";
   TextEditingController titleController = TextEditingController();
   TextEditingController amountController = TextEditingController();
+  DateTime selectedDate = DateTime.now();
+
+  // 選時間
+  Future<void> pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+
+    if (picked != null) {
+      setState(() {
+        selectedDate = picked;
+      });
+    }
+  }
 
   // 按鍵輸入
   void input(String value) {
@@ -110,6 +129,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       "title": titleController.text,
       "amount": result,
       "type": type,
+      "date": selectedDate.toIso8601String(),
     });
   }
 
@@ -165,6 +185,10 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       titleController.text = widget.originalTitle!;
       result = widget.originalAmount!;
       type = widget.originalType!;
+      selectedDate = widget.originalDate ?? DateTime.now();
+      expression = widget.originalAmount!.toString();
+    }else{
+      selectedDate = DateTime.now();
     }
   }
 
@@ -212,6 +236,26 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                 onSelected: (_) => setState(() => type = "支出"),
               ),
             ],
+          ),
+
+          // ⭐ 日期選擇
+          InkWell(
+            onTap: pickDate,
+            child: Padding(
+              padding: EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  Icon(Icons.calendar_today),
+                  SizedBox(width: 8),
+                  Text(
+                    "${selectedDate.year}-"
+                        "${selectedDate.month.toString().padLeft(2, '0')}-"
+                        "${selectedDate.day.toString().padLeft(2, '0')}",
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ],
+              ),
+            ),
           ),
 
           Padding(
