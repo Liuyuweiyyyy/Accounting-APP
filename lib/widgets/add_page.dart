@@ -188,7 +188,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       selectedDate = widget.originalDate ?? DateTime.now();
       expression = widget.originalAmount!.toString();
     }else{
-      selectedDate = DateTime.now();
+      selectedDate = widget.originalDate ?? DateTime.now();
     }
   }
 
