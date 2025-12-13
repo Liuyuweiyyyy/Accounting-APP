@@ -4,6 +4,7 @@ import 'package:midterm/widgets/add_page.dart'; // 新增項目頁面
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart'; // 用來生成唯一 id
+import 'package:month_picker_dialog/month_picker_dialog.dart';
 
 void main() {
   runApp(MaterialApp(
@@ -84,6 +85,22 @@ class _ExpensePageState extends State<ExpensePage> {
       // ⭐ 依時間排序，最新的在最前面
       sortTransactions();
     } // ⭐ 否則保留原本程式碼裡的 transactions 預設值
+  }
+
+  Future<void> pickMonth() async {
+    final selected = await showMonthPicker(
+      context: context,
+      initialDate: selectedMonth,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+
+    if (selected != null) {
+      setState(() {
+        selectedMonth = DateTime(selected.year, selected.month);
+        recalcMonthSummary();
+      });
+    }
   }
 
   @override
@@ -170,8 +187,10 @@ class _ExpensePageState extends State<ExpensePage> {
                 });
               },
             ),
-            Text("${selectedMonth.year} 年 ${selectedMonth.month} 月"),
-            IconButton(
+            GestureDetector(
+              onTap: pickMonth, // 點擊文字就彈出月份選擇器
+              child: Text("${selectedMonth.year} 年 ${selectedMonth.month} 月"),
+            ),            IconButton(
               icon: Icon(Icons.chevron_right),
               onPressed: () {
                 setState(() {
